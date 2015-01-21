@@ -1,0 +1,46 @@
+#!/usr/bin/make -f
+
+DEB_VERSION:=$(shell dpkg-parsechangelog -n1 | sed -n '/^Version: /s///p')
+#999999999999+git
+DEB_UPSTREAM_VERSION:=$(shell DEB_VERSION=${DEB_VERSION}; echo $${DEB_VERSION%-*})
+#999999999999
+DEB_UPSTREAM_VERSION:=$(shell DEB_UPSTREAM_VERSION=${DEB_UPSTREAM_VERSION}; echo $${DEB_UPSTREAM_VERSION\#*:})
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+%:
+	dh $@
+
+override_dh_auto_configure:
+	test -f config.status && make maintainer-clean || :
+	./bootstrap && ./configure \
+		--enable-maintainer-mode \
+	    	--enable-debug \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-openconnect=builtin \
+		--enable-openvpn=builtin \
+		--enable-vpnc=builtin
+
+override_dh_installinit:
+	cp -a scripts/connman debian/connman-git.init
+	dh_installinit
+	cp -a src/connman.service debian/connman-git.service
+	cp -a vpn/connman-vpn.service debian/connman-git-vpn.service
+
+override_dh_auto_test:
+
+override_dh_strip:
+	dh_strip -pconnman-git --dbg-package=connman-git-dbg
+	dh_strip -pconnman-client-git --dbg-package=connman-client-git-dbg
+
+get-orig-source:
+	rm -rf debian/tmp; mkdir debian/tmp
+	cd debian/tmp; git clone --depth=1 https://git.kernel.org/pub/scm/network/connman/connman.git
+	cd debian/tmp; rm -rf connman/.git;
+	cd debian/tmp; mv connman connman-git-${DEB_UPSTREAM_VERSION}
+	cd debian/tmp; tar cvJf connman-git_${DEB_UPSTREAM_VERSION}.orig.tar.xz connman-git-${DEB_UPSTREAM_VERSION}
+	mv debian/tmp/connman-git_${DEB_UPSTREAM_VERSION}.orig.tar.xz .
+	mv debian/tmp/connman-git-${DEB_UPSTREAM_VERSION} .
+	rm -rf debian/tmp

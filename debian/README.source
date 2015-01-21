@@ -1,0 +1,19 @@
+Debian packaging for connman-git
+--------------------------------
+
+Steps to build this package:
+
+```
+$ git clone --dept=1 https://github.com/chilicuil/connman-deb
+$ cd connman-deb
+$ debian/rules get-orig-source #requires git
+$ mv debian connman-*
+$ cd connman-*
+
+[ Optional, make some adaptations, like updating debian/patches, if needed ]
+[ document additional changes if required, $EDITOR debian/changelog ]
+
+$ debuild -b -us -uc
+
+[ Build .dsc (pbuilder) || Upload .changes file (dput) ]
+```
